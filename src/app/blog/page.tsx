@@ -2,11 +2,30 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getPublishedPosts } from "@/lib/queries";
 import { formatDate, truncate } from "@/lib/format";
+import { site } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Furniture Blog — Guides for Pakistani Homes",
   description:
     "Buying guides, home-office tips and furniture care advice for Pakistani homes. Learn before you buy.",
+  alternates: {
+    canonical: `${site.url}/blog`,
+    types: { "application/rss+xml": `${site.url}/rss.xml` },
+  },
+  openGraph: {
+    title: "Furniture Blog — Guides for Pakistani Homes",
+    description:
+      "Buying guides, home-office tips and furniture care advice for Pakistani homes.",
+    url: `${site.url}/blog`,
+    siteName: site.name,
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Furniture Blog — Guides for Pakistani Homes",
+    description:
+      "Buying guides, home-office tips and furniture care advice for Pakistani homes.",
+  },
 };
 
 export const revalidate = 300;
@@ -14,13 +33,42 @@ export const revalidate = 300;
 export default async function BlogPage() {
   const posts = await getPublishedPosts();
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: `${site.name} Blog`,
+    description: "Buying guides, home-office tips and furniture care advice for Pakistani homes.",
+    url: `${site.url}/blog`,
+    publisher: { "@type": "Organization", name: site.name },
+    blogPost: posts.slice(0, 20).map((p) => ({
+      "@type": "BlogPosting",
+      headline: p.title,
+      url: `${site.url}/blog/${p.slug}`,
+      datePublished: p.createdAt.toISOString(),
+    })),
+  };
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="border-b border-border pb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Blog</h1>
-        <p className="mt-2 text-muted">
-          Guides, tips and buying advice for furniture in Pakistan.
-        </p>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      <div className="flex items-end justify-between border-b border-border pb-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Blog</h1>
+          <p className="mt-2 text-muted">
+            Guides, tips and buying advice for furniture in Pakistan.
+          </p>
+        </div>
+        <a
+          href="/rss.xml"
+          className="shrink-0 text-sm font-medium text-muted hover:text-foreground"
+          title="RSS feed"
+        >
+          RSS ↗
+        </a>
       </div>
 
       {posts.length === 0 ? (

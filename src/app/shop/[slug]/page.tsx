@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProductBySlug, getRelatedProducts, getProducts } from "@/lib/queries";
+import { getProductBySlug, getRelatedProducts, getProducts, getPostsForShopCategory } from "@/lib/queries";
 import { ProductCard } from "@/components/product-card";
 import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { formatPKR } from "@/lib/format";
@@ -45,6 +45,7 @@ export default async function ProductPage({ params }: Props) {
   if (!product) notFound();
 
   const related = await getRelatedProducts(product.categorySlug, product.id, 4);
+  const guides = await getPostsForShopCategory(product.categorySlug, 3);
 
   const discount =
     product.compareAtPrice && product.compareAtPrice > product.price
@@ -87,6 +88,8 @@ export default async function ProductPage({ params }: Props) {
       />
 
       <nav className="text-sm text-muted" aria-label="Breadcrumb">
+        <Link href="/" className="hover:text-foreground">Home</Link>
+        <span className="mx-2">/</span>
         <Link href="/shop" className="hover:text-foreground">Shop</Link>
         <span className="mx-2">/</span>
         <Link href={`/shop?category=${product.categorySlug}`} className="hover:text-foreground">
@@ -189,6 +192,34 @@ export default async function ProductPage({ params }: Props) {
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
+        </section>
+      )}
+
+      {guides.length > 0 && (
+        <section className="mt-16 rounded-2xl border border-border bg-background p-8">
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-bold tracking-tight">Buying guides</h2>
+            <Link href="/blog" className="text-sm font-medium text-brand hover:underline">
+              All guides →
+            </Link>
+          </div>
+          <ul className="mt-4 grid gap-4 sm:grid-cols-3">
+            {guides.map((g) => (
+              <li key={g.id}>
+                <Link
+                  href={`/blog/${g.slug}`}
+                  className="group block rounded-xl border border-border p-4 transition-shadow hover:shadow-md"
+                >
+                  <p className="text-sm font-semibold leading-snug group-hover:text-brand">
+                    {g.title}
+                  </p>
+                  {g.excerpt && (
+                    <p className="mt-1 line-clamp-2 text-xs text-muted">{g.excerpt}</p>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
     </div>

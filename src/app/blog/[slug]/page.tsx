@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPostBySlug, getPublishedPosts } from "@/lib/queries";
+import { getPostBySlug, getPublishedPosts, getRelatedPosts, getCategoriesForPost } from "@/lib/queries";
 import { formatDate } from "@/lib/format";
 import { site } from "@/lib/site";
 
@@ -21,15 +21,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await getPostBySlug(slug);
   if (!post) return { title: "Post not found" };
 
+  const title = post.seoTitle ?? post.title;
+  const description = post.seoDescription ?? post.excerpt ?? post.content.slice(0, 160);
+
   return {
-    title: post.seoTitle ?? post.title,
-    description: post.seoDescription ?? post.excerpt ?? post.content.slice(0, 160),
+    title,
+    description,
+    keywords: post.tags ?? undefined,
     openGraph: {
-      title: post.seoTitle ?? post.title,
-      description: post.seoDescription ?? post.excerpt ?? undefined,
+      title,
+      description,
       type: "article",
       publishedTime: post.createdAt.toISOString(),
+      modifiedTime: post.updatedAt.toISOString(),
+      authors: [site.name],
+      tags: post.tags ?? undefined,
       images: post.coverImage ? [{ url: post.coverImage }] : undefined,
+      url: `${site.url}/blog/${post.slug}`,
+    },
+    twitter: {
+      card: post.coverImage ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: post.coverImage ? [post.coverImage] : undefined,
     },
     alternates: { canonical: `${site.url}/blog/${post.slug}` },
   };
@@ -96,16 +110,40 @@ export default async function BlogPostPage({ params }: Props) {
   const post = await getPostBySlug(slug);
   if (!post) notFound();
 
+  const related = await getRelatedPosts(post, 3);
+  const shopCats = await getCategoriesForPost(post, 4);
+  const canonicalUrl = `${site.url}/blog/${post.slug}`;
+
   // BlogPosting structured data (AEO)
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
     description: post.excerpt ?? undefined,
+    image: post.coverImage ? [post.coverImage] : undefined,
     datePublished: post.createdAt.toISOString(),
-    author: { "@type": "Organization", name: site.name },
-    publisher: { "@type": "Organization", name: site.name },
-    mainEntityOfPage: `${site.url}/blog/${post.slug}`,
+    dateModified: post.updatedAt.toISOString(),
+    keywords: post.tags?.length ? post.tags.join(", ") : undefined,
+    wordCount: post.content.split(/\s+/).filter(Boolean).length,
+    inLanguage: "en-PK",
+    articleSection: post.category ?? undefined,
+    author: { "@type": "Organization", name: site.name, url: site.url },
+    publisher: {
+      "@type": "Organization",
+      name: site.name,
+      logo: { "@type": "ImageObject", url: `${site.url}/favicon.ico` },
+    },
+    mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
+  };
+
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: site.url },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${site.url}/blog` },
+      { "@type": "ListItem", position: 3, name: post.title, item: canonicalUrl },
+    ],
   };
 
   return (
@@ -114,8 +152,14 @@ export default async function BlogPostPage({ params }: Props) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
 
       <nav className="text-sm text-muted" aria-label="Breadcrumb">
+        <Link href="/" className="hover:text-foreground">Home</Link>
+        <span className="mx-2">/</span>
         <Link href="/blog" className="hover:text-foreground">Blog</Link>
         <span className="mx-2">/</span>
         <span className="text-foreground">{post.title}</span>
@@ -135,9 +179,62 @@ export default async function BlogPostPage({ params }: Props) {
         </h1>
       </header>
 
+      {post.coverImage && (
+        <div className="mt-8 overflow-hidden rounded-2xl border border-border">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={post.coverImage}
+            alt={post.title}
+            className="w-full object-cover"
+          />
+        </div>
+      )}
+
       <div className="mt-8">{renderContent(post.content)}</div>
 
-      <footer className="mt-12 rounded-2xl border border-border bg-background p-6">
+      {related.length > 0 && (
+        <section className="mt-12 border-t border-border pt-8" aria-labelledby="related-heading">
+          <h2 id="related-heading" className="text-lg font-semibold">
+            Related posts
+          </h2>
+          <ul className="mt-4 grid gap-4 sm:grid-cols-3">
+            {related.map((r) => (
+              <li key={r.id}>
+                <Link
+                  href={`/blog/${r.slug}`}
+                  className="group block rounded-xl border border-border p-4 transition-shadow hover:shadow-md"
+                >
+                  <p className="text-sm font-semibold leading-snug group-hover:text-brand">
+                    {r.title}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">{formatDate(r.createdAt)}</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {shopCats.length > 0 && (
+        <section className="mt-12 rounded-2xl border border-border bg-background p-6" aria-labelledby="shop-topic-heading">
+          <h2 id="shop-topic-heading" className="text-sm font-semibold">
+            Shop this topic
+          </h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {shopCats.map((c) => (
+              <Link
+                key={c.id}
+                href={`/shop?category=${c.slug}`}
+                className="rounded-full border border-border px-4 py-1.5 text-sm font-medium transition-colors hover:border-brand hover:text-brand"
+              >
+                {c.name}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <footer className="mt-8 rounded-2xl border border-border bg-background p-6">
         <p className="text-sm text-muted">
           Looking for furniture?{" "}
           <Link href="/shop" className="font-semibold text-brand hover:underline">

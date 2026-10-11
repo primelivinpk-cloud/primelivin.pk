@@ -155,6 +155,94 @@ export const getPostBySlug = cache(async (slug: string): Promise<BlogPost | null
   return (rows[0] ?? null) as BlogPost | null;
 });
 
+/** Admin: all posts regardless of status. */
+export const getAllPosts = cache(async (): Promise<BlogPost[]> => {
+  const rows = await db.select().from(blogPosts).orderBy(desc(blogPosts.createdAt));
+  return rows as BlogPost[];
+});
+
+export const getPostById = cache(async (id: string): Promise<BlogPost | null> => {
+  const rows = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
+  return (rows[0] ?? null) as BlogPost | null;
+});
+
+/** Related published posts: same category first, then most recent. Excludes the current post. */
+export const getRelatedPosts = cache(
+  async (post: BlogPost, limit = 3): Promise<BlogPost[]> => {
+    const conditions = [
+      eq(blogPosts.status, "published"),
+      post.category ? eq(blogPosts.category, post.category) : undefined,
+    ].filter(Boolean) as ReturnType<typeof eq>[];
+
+    const rows = await db
+      .select()
+      .from(blogPosts)
+      .where(and(...conditions))
+      .orderBy(desc(blogPosts.createdAt))
+      .limit(limit + 5);
+
+    return (rows.filter((p) => p.id !== post.id).slice(0, limit)) as BlogPost[];
+  }
+);
+
+/** Published posts relevant to a shop category (matches tags, category or title words). */
+export const getPostsForShopCategory = cache(
+  async (categorySlug: string, limit = 3): Promise<BlogPost[]> => {
+    const posts = await getPublishedPosts(50);
+    const slugTokens = categorySlug.split("-").filter((t) => t.length > 3);
+
+    const scored = posts
+      .map((p) => {
+        const tagTokens = (p.tags ?? []).flatMap((t) =>
+          t.toLowerCase().split(/[\s-]+/)
+        );
+        const haystack = [p.category ?? "", p.title, p.excerpt ?? ""]
+          .join(" ")
+          .toLowerCase();
+        const exactTag = (p.tags ?? []).some(
+          (t) => t.toLowerCase().replace(/\s+/g, "-") === categorySlug
+        );
+        const tokenHits = slugTokens.filter(
+          (w) => tagTokens.includes(w) || haystack.includes(w)
+        ).length;
+        return { p, score: exactTag ? 3 : tokenHits };
+      })
+      .filter((s) => s.score > 0)
+      .sort(
+        (a, b) =>
+          b.score - a.score || b.p.createdAt.getTime() - a.p.createdAt.getTime()
+      );
+
+    return scored.slice(0, limit).map((s) => s.p);
+  }
+);
+
+/** Shop categories a post likely relates to (by tag/category/title token overlap). */
+export const getCategoriesForPost = cache(
+  async (post: BlogPost, limit = 4): Promise<Category[]> => {
+    const cats = await getCategories();
+    const tokens = new Set(
+      [
+        ...(post.tags ?? []).flatMap((t) => t.toLowerCase().split(/[\s-]+/)),
+        ...(post.category?.toLowerCase().split(/[\s-]+/) ?? []),
+        ...post.title.toLowerCase().split(/[\s-]+/),
+      ].filter((t) => t.length > 3)
+    );
+
+    const scored = cats
+      .map((c) => {
+        const hits = c.slug
+          .split("-")
+          .filter((t) => t.length > 3 && tokens.has(t)).length;
+        return { c, hits };
+      })
+      .filter((s) => s.hits > 0)
+      .sort((a, b) => b.hits - a.hits);
+
+    return scored.slice(0, limit).map((s) => s.c);
+  }
+);
+
 // ---------- Stats ----------
 
 export const getStoreStats = cache(async () => {

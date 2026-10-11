@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getProducts, getCategories, countProducts, type ProductSort } from "@/lib/queries";
+import { getProducts, getCategories, countProducts, getPostsForShopCategory, type ProductSort } from "@/lib/queries";
 import { ProductCard } from "@/components/product-card";
 
 export const metadata: Metadata = {
@@ -51,10 +51,11 @@ export default async function ShopPage({
     offset: (page - 1) * PAGE_SIZE,
   };
 
-  const [products, categories, total] = await Promise.all([
+  const [products, categories, total, guides] = await Promise.all([
     getProducts(query),
     getCategories(),
     countProducts({ category, search, minPrice: query.minPrice, maxPrice: query.maxPrice }),
+    category && !search ? getPostsForShopCategory(category, 3) : Promise.resolve([]),
   ]);
 
   const activeCategory = categories.find((c) => c.slug === category);
@@ -157,6 +158,34 @@ export default async function ShopPage({
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
+      )}
+
+      {guides.length > 0 && (
+        <section className="mt-12 rounded-2xl border border-border bg-background p-6" aria-labelledby="guides-heading">
+          <div className="flex items-baseline justify-between">
+            <h2 id="guides-heading" className="text-sm font-bold tracking-tight">
+              Buying guides for {activeCategory?.name ?? "this category"}
+            </h2>
+            <Link href="/blog" className="text-sm font-medium text-brand hover:underline">
+              All guides →
+            </Link>
+          </div>
+          <ul className="mt-3 grid gap-3 sm:grid-cols-3">
+            {guides.map((g) => (
+              <li key={g.id}>
+                <Link
+                  href={`/blog/${g.slug}`}
+                  className="group block rounded-xl border border-border p-4 transition-shadow hover:shadow-md"
+                >
+                  <p className="text-sm font-semibold leading-snug group-hover:text-brand">
+                    {g.title}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">Read guide →</p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {/* Pagination */}

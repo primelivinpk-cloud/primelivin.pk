@@ -1,0 +1,278 @@
+Plan: Furniture Webstore for Pakistan (WooCommerce-like)
+
+Context
+
+This is a greenfield project - an empty /Users/pc/chair-store directory with no existing code. The user wants a WooCommerce-like webstore for furniture (chairs, etc.) targeting the Pakistan market, with blog functionality, SEO/AEO/GEO optimization, and settings/dashboard.
+
+Key Requirements:
+- WooCommerce-like store pages, blogs, products
+- SEO optimized, AEO optimized, GEO optimized
+- Target Pakistan market
+- All types of furniture (e.g., chairs)
+- Dashboard/settings
+
+Recommended Approach
+
+Tech Stack
+
+- Next.js 14 with App Router (Vercel default)
+- TypeScript
+- Tailwind CSS for styling
+- Vercel Postgres (via Vercel Marketplace) for product/data storage
+- Vercel Blob for product image storage
+- Next-seo for meta tag management
+- React Hook Form + Zod for forms
+- Shadcn/UI component library for consistent UI
+- Next-i18next or next-i18n-router for Pakistan localization (en/ur)
+
+Core Architecture
+
+1. Pages Router Structure (App Router)
+
+app/
+  dashboard/          # User dashboard (orders, profile)
+    page.tsx
+    orders/           # Order history
+      page.tsx
+    settings/         # User settings
+      page.tsx
+  shop/               # Store pages
+    page.tsx          # Main shop page
+    [category]/       # Category pages
+      page.tsx
+    [slug]/           # Product detail pages
+      page.tsx
+  blog/               # Blog section
+    page.tsx
+    [slug]/           # Blog post pages
+      page.tsx
+  api/                # API routes
+    products/
+      route.ts        # Get products
+    cart/
+      route.ts        # Cart management
+    orders/
+      route.ts        # Order creation
+
+2. Key Features
+
+Product Management:
+- Product CRUD (admin)
+- Categories/Tags (wood, metal, modern, traditional, etc.)
+- Price tracking
+- Image upload via Vercel Blob
+- SEO fields per product (title, description, slug)
+
+Blog Section:
+- Blog posts with categories
+- Rich text content
+- Related posts
+- Comment system (optional)
+
+SEO Optimization:
+- Global meta tags via Next-seo
+- Per-page SEO optimization
+- Open Graph tags
+- Twitter cards
+- Schema.org structured data (Product, Blog, FAQ, HowTo)
+
+AEO (Answer Engine Optimization):
+- FAQ schema markup on product pages
+- How-to schema for furniture assembly
+- Q&A structured data
+- "People also ask" content patterns
+- Clear, concise answers to common furniture questions
+
+GEO (Geographical Optimization) for Pakistan:
+- Pakistan market targeting in content
+- Local currency (PKR) pricing
+- Region-specific delivery information
+- Pakistan furniture preferences in content
+- Urdu language support alongside English
+- Localized meta content for Pakistan searches
+- Geo-relevant blog content (e.g., "Furniture buying guide for Pakistan")
+
+Dashboard/Settings:
+- User order history
+- Profile management
+- Address book (Pakistan addresses)
+- Order tracking
+- Admin product management (if multi-tenant)
+
+3. Data Model (Vercel Postgres)
+
+Products Table:
+- id, title, slug, description
+- price, compare_at_price, currency (PKR)
+- category, tags
+- stock_quantity
+- images (URLs from Vercel Blob)
+- seo_title, seo_description
+- is_featured, is_active
+- created_at, updated_at
+
+Orders Table:
+- id, user_id, status
+- total_amount, currency
+- shipping_address (Pakistan-specific fields)
+- payment_method, payment_status
+- created_at, updated_at
+
+Blog Posts Table:
+- id, title, slug, excerpt, content
+- category, tags
+- seo_title, seo_description
+- status (draft/published)
+- created_at, updated_at
+
+4. Key API Routes
+
+api/products/           # GET (list), POST (create)
+api/products/[id]       # GET (detail), PUT (update), DELETE
+api/products/[id]/reviews  # POST (add review)
+api/blog/               # GET (list), POST (create)
+api/blog/[id]           # GET (detail)
+api/cart/               # GET, PUT, DELETE
+api/orders/             # POST (create), GET (user orders)
+api/orders/[id]         # GET (order detail), PUT (update status)
+
+5. SEO/AEO/GEO Implementation Details
+
+SEO (next-seo example):
+import { Seo } from 'next-seo';
+
+export default function ProductPage({ product }) {
+  return (
+    <Seo>
+      <title>{product.title} - Furniture Store Pakistan</title>
+      <description>{product.seo_description || product.description.substring(0, 160)}</description>
+      <openGraph>
+        {/ product image, title, description /}
+      </openGraph>
+      <twitter>
+        {/ twitter card content /}
+      </twitter>
+    </Seo>
+  );
+}
+
+AEO - Structured Data:
+// Product page schema.org/Product
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": product.title,
+  "description": product.description,
+  "offers": {
+    "@type": "Offer",
+    "price": product.price,
+    "priceCurrency": "PKR"
+  },
+  "sku": product.sku,
+  "aggregateRating": {
+    "@type": "AggregateRating",
+    "ratingValue": product.rating,
+    "reviewCount": product.reviewCount
+  }
+}
+</script>
+
+GEO - Pakistan Localization:
+- Price display in PKR with ₹ or PKR symbol
+- Delivery regions: Punjab, Sindh, Khyber Pakhtunkhwa, Balochistan, Islamabad
+- Estimated delivery times per region
+- Local payment methods (Cash on Delivery, bank transfer, EasyPaisa, JazzCash)
+- Content about Pakistani furniture markets, trends, buying guides
+
+6. Development Phases
+
+Phase 1: Foundation
+- Initialize Next.js 14 with App Router
+- Set up Tailwind CSS, TypeScript
+- Configure Vercel Postgres connection
+- Set up Vercel Blob storage
+- Create base layout and navigation
+
+Phase 2: Product Catalog
+- Product model and API routes
+- Product listing page with filtering
+- Product detail page with SEO
+- Image upload capability
+
+Phase 3: Cart & Checkout
+- Cart management API
+- Checkout flow
+- Order creation
+- Pakistan address handling
+
+Phase 4: Blog & Content
+- Blog post model
+- Blog listing and detail pages
+- SEO for blog posts
+- Internal linking
+
+Phase 5: AEO & GEO
+- Structured data implementation
+- Pakistan-specific meta content
+- Currency formatting
+- Localization (en/ur)
+
+Phase 6: Dashboard & Settings
+- User dashboard (orders, profile)
+- User settings (addresses, preferences)
+- Admin panel (if needed)
+
+7. Vercel Configuration
+
+vercel.ts (recommended over vercel.json):
+import { routes, deploymentEnv, type VercelConfig } from '@vercel/config/v1';
+
+export const config: VercelConfig = {
+  buildCommand: 'npm run build',
+  framework: 'nextjs',
+  api: {
+    bodySizeLimit: '4mb',
+  },
+  functions: {
+    maxDuration: 300, // 5 minutes max
+  },
+  postgres: {
+    connectionString: process.env.DATABASE_URL,
+  },
+  blob: {
+    url: process.env.BLOB_READ_WRITE_TOKEN,
+  },
+};
+
+Environment Variables:
+- DATABASE_URL - Vercel Postgres
+- BLOB_READ_WRITE_TOKEN - Vercel Blob
+- NEXT_PUBLIC_SITE_URL - Base URL
+- NEXT_PUBLIC_CURRENCY - PKR
+- NEXT_PUBLIC_ENABLE_URDU - true/false
+
+8. Testing & Verification
+
+SEO Verification:
+- Run next seo generator checks
+- Verify meta tags in source HTML
+- Test with Google Rich Results Test
+- Validate structured data with Schema validator
+
+AEO Verification:
+- Use Google's Rich Results Test for schema.org markup
+- Verify FAQ, How-to, Product schemas render correctly
+- Check AI search visibility (Perplexity, etc.)
+
+GEO Verification:
+- Test Pakistan market content rendering
+- Verify PKR currency display
+- Check localization language switching
+- Test delivery info for Pakistani regions
+
+Performance:
+- Lighthouse scores on Vercel
+- Image optimization via Vercel Blob
+- Core Web Vitals monitoring
+                          

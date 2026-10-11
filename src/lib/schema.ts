@@ -126,6 +126,17 @@ export const orderItems = sqliteTable("order_items", {
   ...timestamps,
 });
 
+// ---------- Cart Items (server-side cart keyed by anonymous cart token) ----------
+export const cartItems = sqliteTable("cart_items", {
+  id: text("id").primaryKey(),
+  cartToken: text("cart_token").notNull(),
+  productId: text("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  quantity: integer("quantity").notNull().default(1),
+  ...timestamps,
+});
+
 // ---------- Inferred types ----------
 export type Category = typeof categories.$inferSelect;
 export type Product = typeof products.$inferSelect;
@@ -135,3 +146,4 @@ export type NewBlogPost = typeof blogPosts.$inferInsert;
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;
+export type CartItem = typeof cartItems.$inferSelect;

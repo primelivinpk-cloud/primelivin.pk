@@ -90,6 +90,15 @@ const migrations = [
     updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
   );`,
 
+  `CREATE TABLE IF NOT EXISTS cart_items (
+    id TEXT PRIMARY KEY,
+    cart_token TEXT NOT NULL,
+    product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+    updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+  );`,
+
   // Indexes for common lookups
   `CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_slug);`,
   `CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);`,
@@ -97,6 +106,8 @@ const migrations = [
   `CREATE INDEX IF NOT EXISTS idx_blog_status ON blog_posts(status);`,
   `CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);`,
   `CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_cart_items_token ON cart_items(cart_token);`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_cart_items_token_product ON cart_items(cart_token, product_id);`,
 ];
 
 async function migrate() {

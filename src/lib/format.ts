@@ -49,3 +49,16 @@ export function truncate(text: string, max = 160): string {
 export function newId(prefix = "id"): string {
   return `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
 }
+
+/**
+ * Generate a short human-readable order number for confirmation URLs,
+ * e.g. "PL-4KX9QT". Unguessable enough for guest order lookup.
+ */
+export function newOrderNumber(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  const bytes = new Uint8Array(6);
+  crypto.getRandomValues(bytes);
+  for (const b of bytes) s += alphabet[b % alphabet.length];
+  return `PL-${s}`;
+}

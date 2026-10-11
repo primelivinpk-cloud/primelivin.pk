@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
+import { useCart } from "@/components/cart/cart-provider";
 
 const nav = [
   { href: "/", label: "Home" },
@@ -14,6 +15,8 @@ const nav = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const { cart } = useCart();
+  const count = cart.itemCount;
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -65,7 +68,7 @@ export function SiteHeader() {
             className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
           >
             Cart
-            <span className="rounded-full bg-brand-fg/20 px-2 py-0.5 text-xs">0</span>
+            <span className="rounded-full bg-brand-fg/20 px-2 py-0.5 text-xs">{count}</span>
           </Link>
         </div>
 
@@ -119,7 +122,7 @@ export function SiteHeader() {
               onClick={() => setOpen(false)}
               className="block rounded-md bg-brand px-3 py-2 text-center text-base font-semibold text-brand-fg"
             >
-              Cart (0)
+              Cart ({count})
             </Link>
           </div>
         </div>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductBySlug, getRelatedProducts, getProducts } from "@/lib/queries";
 import { ProductCard } from "@/components/product-card";
+import { AddToCartButton } from "@/components/cart/add-to-cart-button";
 import { formatPKR } from "@/lib/format";
 import { site } from "@/lib/site";
 
@@ -176,13 +177,7 @@ export default async function ProductPage({ params }: Props) {
             </ul>
           </div>
 
-          <button
-            type="button"
-            className="mt-8 w-full rounded-xl bg-brand px-6 py-4 text-base font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-50"
-            disabled={product.stockQuantity <= 0}
-          >
-            {product.stockQuantity > 0 ? "Add to Cart" : "Out of Stock"}
-          </button>
+          <AddToCartButton productId={product.id} disabled={product.stockQuantity <= 0} />
         </div>
       </div>
 

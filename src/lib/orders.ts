@@ -33,7 +33,8 @@ export async function getOrderById(id: string): Promise<OrderWithItems | null> {
  */
 export async function createOrderFromCart(
   token: string,
-  input: CheckoutInput
+  input: CheckoutInput,
+  userId: string | null = null
 ): Promise<string> {
   await pruneInvalidItems(token);
   const cart = await getCart(token);
@@ -54,7 +55,7 @@ export async function createOrderFromCart(
   await db.transaction(async (tx) => {
     await tx.insert(orders).values({
       id: orderId,
-      userId: null,
+      userId,
       customerName: input.customerName,
       customerEmail: input.customerEmail?.trim() || null,
       customerPhone: input.customerPhone,

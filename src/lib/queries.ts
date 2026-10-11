@@ -5,6 +5,7 @@ import {
   categories,
   blogPosts,
   orders,
+  orderItems,
   type Product,
   type BlogPost,
   type Category,
@@ -289,5 +290,34 @@ export const getAdminStats = cache(async () => {
     inventoryValue: inventoryValue[0]?.total ?? 0,
     publishedPosts: publishedPosts[0]?.count ?? 0,
     totalOrders: totalOrders[0]?.count ?? 0,
+  };
+});
+
+// ---------- User dashboard ----------
+
+/** A user's orders (newest first) with line-item counts. */
+export const getUserOrders = cache(async (userId: string) => {
+  const rows = await db
+    .select({ order: orders, itemCount: sql<number>`count(${orderItems.id})` })
+    .from(orders)
+    .leftJoin(orderItems, eq(orderItems.orderId, orders.id))
+    .where(eq(orders.userId, userId))
+    .groupBy(orders.id)
+    .orderBy(desc(orders.createdAt));
+  return rows;
+});
+
+/** Aggregate order stats for the dashboard overview. */
+export const getUserOrderStats = cache(async (userId: string) => {
+  const rows = await db
+    .select({
+      count: sql<number>`count(*)`,
+      spent: sql<number>`coalesce(sum(total_amount), 0)`,
+    })
+    .from(orders)
+    .where(eq(orders.userId, userId));
+  return {
+    totalOrders: rows[0]?.count ?? 0,
+    totalSpent: rows[0]?.spent ?? 0,
   };
 });

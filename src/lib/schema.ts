@@ -137,12 +137,36 @@ export const cartItems = sqliteTable("cart_items", {
   ...timestamps,
 });
 
+// ---------- Users (customer accounts) ----------
+export const users = sqliteTable("users", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  phone: text("phone"),
+  passwordHash: text("password_hash").notNull(),
+  role: text("role", { enum: ["customer", "admin"] }).notNull().default("customer"),
+  ...timestamps,
+});
+
+// ---------- Sessions (opaque cookie token -> user) ----------
+export const sessions = sqliteTable("sessions", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+  ...timestamps,
+});
+
 // ---------- Inferred types ----------
 export type Category = typeof categories.$inferSelect;
 export type Product = typeof products.$inferSelect;
 export type NewProduct = typeof products.$inferInsert;
 export type BlogPost = typeof blogPosts.$inferSelect;
 export type NewBlogPost = typeof blogPosts.$inferInsert;
+export type User = typeof users.$inferSelect;
+export type NewUser = typeof users.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;

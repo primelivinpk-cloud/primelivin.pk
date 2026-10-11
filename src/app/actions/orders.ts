@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { parseCheckoutForm, checkoutFormErrors } from "@/lib/validations/order";
 import { createOrderFromCart } from "@/lib/orders";
+import { getSessionUser } from "@/lib/auth";
 
 export type CheckoutActionState = {
   errors?: Record<string, string>;
@@ -33,9 +34,11 @@ export async function createOrder(
     return { message: "Your cart is empty." };
   }
 
+  const user = await getSessionUser();
+
   let orderId: string;
   try {
-    orderId = await createOrderFromCart(token, parsed.data);
+    orderId = await createOrderFromCart(token, parsed.data, user?.id ?? null);
   } catch (err) {
     return {
       message:

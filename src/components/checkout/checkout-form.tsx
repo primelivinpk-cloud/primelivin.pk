@@ -24,7 +24,15 @@ function Legend({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function CheckoutForm({ lang }: { lang: Locale }) {
+type Prefill = { name: string; email: string; phone: string | null };
+
+export function CheckoutForm({
+  lang,
+  prefill,
+}: {
+  lang: Locale;
+  prefill?: Prefill;
+}) {
   const [state, formAction, isPending] = useActionState(
     createOrder,
     initialState
@@ -52,6 +60,7 @@ export function CheckoutForm({ lang }: { lang: Locale }) {
             <input
               id="customerName"
               name="customerName"
+              defaultValue={prefill?.name ?? ""}
               className={inputClass}
               placeholder="e.g. Ahmed Khan"
               autoComplete="name"
@@ -66,6 +75,7 @@ export function CheckoutForm({ lang }: { lang: Locale }) {
             <input
               id="customerPhone"
               name="customerPhone"
+              defaultValue={prefill?.phone ?? ""}
               className={inputClass}
               placeholder="0300 1234567"
               inputMode="tel"
@@ -83,6 +93,7 @@ export function CheckoutForm({ lang }: { lang: Locale }) {
             id="customerEmail"
             name="customerEmail"
             type="email"
+            defaultValue={prefill?.email ?? ""}
             className={inputClass}
             placeholder="you@example.com"
             autoComplete="email"

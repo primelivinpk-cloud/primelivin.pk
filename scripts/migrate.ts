@@ -99,6 +99,25 @@ const migrations = [
     updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
   );`,
 
+  `CREATE TABLE IF NOT EXISTS users (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    phone TEXT,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'customer',
+    created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+    updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+  );`,
+
+  `CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    expires_at INTEGER NOT NULL,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+    updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+  );`,
+
   // Indexes for common lookups
   `CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_slug);`,
   `CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);`,
@@ -107,6 +126,8 @@ const migrations = [
   `CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id);`,
   `CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id);`,
   `CREATE INDEX IF NOT EXISTS idx_cart_items_token ON cart_items(cart_token);`,
+  `CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_cart_items_token_product ON cart_items(cart_token, product_id);`,
 ];
 

@@ -7,6 +7,7 @@ import { CheckoutForm } from "@/components/checkout/checkout-form";
 import { formatPKR } from "@/lib/format";
 import { isLocale, localize, type Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n/ui";
+import { getSessionUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -23,6 +24,7 @@ export default async function CheckoutPage({
   const lang: Locale = raw && isLocale(raw) ? raw : "en";
   const d = t(lang);
   const cartHref = localize("/cart", lang);
+  const user = await getSessionUser();
 
   const store = await cookies();
   const token = store.get("cart_token")?.value;
@@ -43,7 +45,14 @@ export default async function CheckoutPage({
 
       <div className="mt-10 grid gap-12 lg:grid-cols-[1.4fr_1fr]">
         <div>
-          <CheckoutForm lang={lang} />
+          <CheckoutForm
+            lang={lang}
+            prefill={
+              user
+                ? { name: user.name, email: user.email, phone: user.phone }
+                : undefined
+            }
+          />
         </div>
 
         <aside className="lg:sticky lg:top-24 lg:self-start">

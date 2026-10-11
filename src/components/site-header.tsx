@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/components/cart/cart-provider";
 import { localize, type Locale } from "@/lib/i18n";
@@ -40,10 +40,29 @@ function LanguageSwitcher({ lang }: { lang: Locale }) {
 
 export function SiteHeader({ lang }: { lang: Locale }) {
   const [open, setOpen] = useState(false);
+  const [authed, setAuthed] = useState<boolean | null>(null);
   const pathname = usePathname();
   const { cart } = useCart();
   const count = cart.itemCount;
   const d = t(lang);
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((data) => {
+        if (alive) setAuthed(Boolean(data?.user));
+      })
+      .catch(() => {
+        if (alive) setAuthed(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const accountHref = localize(authed === false ? "/login" : "/dashboard", lang);
+  const accountLabel = authed === false ? d.auth.signIn : d.nav.account;
 
   const nav = [
     { href: "/", label: d.nav.home },
@@ -94,10 +113,10 @@ export function SiteHeader({ lang }: { lang: Locale }) {
             {d.nav.admin}
           </Link>
           <Link
-            href={localize("/dashboard", lang)}
+            href={accountHref}
             className="text-sm font-medium text-muted transition-colors hover:text-foreground"
           >
-            {d.nav.account}
+            {accountLabel}
           </Link>
           <Link
             href={localize("/cart", lang)}
@@ -150,11 +169,11 @@ export function SiteHeader({ lang }: { lang: Locale }) {
               {d.nav.admin}
             </Link>
             <Link
-              href={localize("/dashboard", lang)}
+              href={accountHref}
               onClick={() => setOpen(false)}
               className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-brand/10"
             >
-              {d.nav.account}
+              {accountLabel}
             </Link>
             <Link
               href={localize("/cart", lang)}

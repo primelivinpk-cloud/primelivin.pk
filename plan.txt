@@ -219,9 +219,9 @@ Phase 5: AEO & GEO
 - Localization (en/ur)
 
 Phase 6: Dashboard & Settings
-- User dashboard (orders, profile , Track Order)
-- User settings (addresses, preferences)
-- Admin Dashboard [Pages[Advance Editor with seo,Aeo, Geo etc] , Products[Advance Editor with seo,Aeo, Geo etc] , Blog [Advance Editor with seo,Aeo, Geo etc], Settings[Basic to Advance] , Orders[Basic to Advance] , etc like wordpress Dashboard] 
+- User dashboard (orders, profile , Track Order etc)
+- User settings (addresses, preferences etc)
+- Admin Dashboard [Pages[Advance Editor with seo,Aeo, Geo etc] , Products[Advance Editor with seo,Aeo, Geo etc] , Blog [Advance Editor with seo,Aeo, Geo etc], Settings[Basic to Advance etc] , Orders[Basic to Advance etc] like wordpress Dashboard etc] 
 
 7. Vercel Configuration
 

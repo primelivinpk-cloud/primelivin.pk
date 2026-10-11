@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createOrder, type CheckoutActionState } from "@/app/actions/orders";
 import { site } from "@/lib/site";
+import type { Locale } from "@/lib/i18n";
+import { t } from "@/lib/i18n/ui";
 
 const initialState: CheckoutActionState = {};
 
@@ -22,19 +24,15 @@ function Legend({ children }: { children: React.ReactNode }) {
   );
 }
 
-const paymentHelp: Record<string, string> = {
-  "Cash on Delivery": "Pay in cash when your order arrives at your door.",
-  "Bank Transfer": "We'll message you our bank details to complete payment.",
-  EasyPaisa: "We'll message you the EasyPaisa number after you order.",
-  JazzCash: "We'll message you the JazzCash number after you order.",
-};
-
-export function CheckoutForm() {
+export function CheckoutForm({ lang }: { lang: Locale }) {
   const [state, formAction, isPending] = useActionState(
     createOrder,
     initialState
   );
   const errors = state.errors ?? {};
+  const [region, setRegion] = useState<string>("");
+  const deliveryEstimate = region ? site.deliveryEstimates[region] : undefined;
+  const d = t(lang);
 
   return (
     <form action={formAction} className="space-y-10">
@@ -45,11 +43,11 @@ export function CheckoutForm() {
       )}
 
       <section className="space-y-4">
-        <Legend>Contact information</Legend>
+        <Legend>{d.checkout.contactInfo}</Legend>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="customerName" className={labelClass}>
-              Full name <span className="text-red-600">*</span>
+              {d.checkout.fullName} <span className="text-red-600">*</span>
             </label>
             <input
               id="customerName"
@@ -63,7 +61,7 @@ export function CheckoutForm() {
           </div>
           <div>
             <label htmlFor="customerPhone" className={labelClass}>
-              Mobile number <span className="text-red-600">*</span>
+              {d.checkout.mobile} <span className="text-red-600">*</span>
             </label>
             <input
               id="customerPhone"
@@ -79,7 +77,7 @@ export function CheckoutForm() {
         </div>
         <div>
           <label htmlFor="customerEmail" className={labelClass}>
-            Email <span className="text-muted font-normal">(optional)</span>
+            {d.checkout.email} <span className="text-muted font-normal">{d.checkout.optional}</span>
           </label>
           <input
             id="customerEmail"
@@ -94,10 +92,10 @@ export function CheckoutForm() {
       </section>
 
       <section className="space-y-4">
-        <Legend>Shipping address</Legend>
+        <Legend>{d.checkout.shippingTitle}</Legend>
         <div>
           <label htmlFor="addressLine1" className={labelClass}>
-            House / street / area <span className="text-red-600">*</span>
+            {d.checkout.address1} <span className="text-red-600">*</span>
           </label>
           <input
             id="addressLine1"
@@ -111,7 +109,7 @@ export function CheckoutForm() {
         </div>
         <div>
           <label htmlFor="addressLine2" className={labelClass}>
-            Landmark / nearby reference <span className="text-muted font-normal">(optional)</span>
+            {d.checkout.address2} <span className="text-muted font-normal">{d.checkout.optional}</span>
           </label>
           <input
             id="addressLine2"
@@ -125,7 +123,7 @@ export function CheckoutForm() {
         <div className="grid gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="city" className={labelClass}>
-              City <span className="text-red-600">*</span>
+              {d.checkout.city} <span className="text-red-600">*</span>
             </label>
             <input
               id="city"
@@ -139,18 +137,19 @@ export function CheckoutForm() {
           </div>
           <div>
             <label htmlFor="region" className={labelClass}>
-              Province / region <span className="text-red-600">*</span>
+              {d.checkout.region} <span className="text-red-600">*</span>
             </label>
             <select
               id="region"
               name="region"
               className={inputClass}
-              defaultValue=""
+              value={region}
+              onChange={(e) => setRegion(e.target.value)}
               autoComplete="address-level1"
               required
             >
               <option value="" disabled>
-                Select…
+                {d.checkout.select}
               </option>
               {site.regions.map((r) => (
                 <option key={r} value={r}>
@@ -159,10 +158,15 @@ export function CheckoutForm() {
               ))}
             </select>
             <ErrorText>{errors.region}</ErrorText>
+            {deliveryEstimate && (
+              <p className="mt-1 text-xs text-brand">
+                {d.checkout.estDelivery(deliveryEstimate)}
+              </p>
+            )}
           </div>
           <div>
             <label htmlFor="postalCode" className={labelClass}>
-              Postal code <span className="text-muted font-normal">(optional)</span>
+              {d.checkout.postal} <span className="text-muted font-normal">{d.checkout.optional}</span>
             </label>
             <input
               id="postalCode"
@@ -178,7 +182,7 @@ export function CheckoutForm() {
       </section>
 
       <section className="space-y-4">
-        <Legend>Payment method</Legend>
+        <Legend>{d.checkout.paymentTitle}</Legend>
         <div className="space-y-3">
           {site.paymentMethods.map((method) => (
             <label
@@ -194,9 +198,11 @@ export function CheckoutForm() {
                 required
               />
               <span>
-                <span className="block text-sm font-semibold">{method}</span>
+                <span className="block text-sm font-semibold">
+                  {d.checkout.paymentLabels[method] ?? method}
+                </span>
                 <span className="mt-0.5 block text-xs text-muted">
-                  {paymentHelp[method]}
+                  {d.checkout.paymentHelp[method]}
                 </span>
               </span>
             </label>
@@ -210,11 +216,11 @@ export function CheckoutForm() {
         disabled={isPending}
         className="w-full rounded-xl bg-brand px-6 py-4 text-base font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {isPending ? "Placing order…" : "Place Order"}
+        {isPending ? d.checkout.placing : d.checkout.placeOrder}
       </button>
 
       <p className="text-center text-xs text-muted">
-        By placing this order you agree to our shipping and returns policy.
+        {d.checkout.terms}
       </p>
     </form>
   );

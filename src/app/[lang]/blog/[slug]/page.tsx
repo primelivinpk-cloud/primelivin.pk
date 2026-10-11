@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { getPostBySlug, getPublishedPosts, getRelatedPosts, getCategoriesForPost } from "@/lib/queries";
 import { formatDate } from "@/lib/format";
 import { site } from "@/lib/site";
+import { canonicalFor, isLocale, languagesFor, localize, type Locale } from "@/lib/i18n";
+import { t } from "@/lib/i18n/ui";
 
 // Revalidate blog pages every 5 minutes (ISR).
 export const revalidate = 300;
@@ -14,10 +16,11 @@ export async function generateStaticParams() {
   return all.map((p) => ({ slug: p.slug }));
 }
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ lang: string; slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug, lang: raw } = await params;
+  const lang: Locale = raw && isLocale(raw) ? raw : "en";
   const post = await getPostBySlug(slug);
   if (!post) return { title: "Post not found" };
 
@@ -37,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       authors: [site.name],
       tags: post.tags ?? undefined,
       images: post.coverImage ? [{ url: post.coverImage }] : undefined,
-      url: `${site.url}/blog/${post.slug}`,
+      url: canonicalFor(`/blog/${post.slug}`, lang),
     },
     twitter: {
       card: post.coverImage ? "summary_large_image" : "summary",
@@ -45,7 +48,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       images: post.coverImage ? [post.coverImage] : undefined,
     },
-    alternates: { canonical: `${site.url}/blog/${post.slug}` },
+    alternates: {
+      canonical: canonicalFor(`/blog/${post.slug}`, lang),
+      languages: languagesFor(`/blog/${post.slug}`),
+    },
   };
 }
 
@@ -106,13 +112,16 @@ function inline(text: string) {
 }
 
 export default async function BlogPostPage({ params }: Props) {
-  const { slug } = await params;
+  const { slug, lang: raw } = await params;
+  const lang: Locale = raw && isLocale(raw) ? raw : "en";
+  const d = t(lang);
+  const L = (path: string) => localize(path, lang);
   const post = await getPostBySlug(slug);
   if (!post) notFound();
 
   const related = await getRelatedPosts(post, 3);
   const shopCats = await getCategoriesForPost(post, 4);
-  const canonicalUrl = `${site.url}/blog/${post.slug}`;
+  const canonicalUrl = canonicalFor(`/blog/${post.slug}`, lang);
 
   // BlogPosting structured data (AEO)
   const jsonLd = {
@@ -158,9 +167,9 @@ export default async function BlogPostPage({ params }: Props) {
       />
 
       <nav className="text-sm text-muted" aria-label="Breadcrumb">
-        <Link href="/" className="hover:text-foreground">Home</Link>
+        <Link href={L("/")} className="hover:text-foreground">{d.common.home}</Link>
         <span className="mx-2">/</span>
-        <Link href="/blog" className="hover:text-foreground">Blog</Link>
+        <Link href={L("/blog")} className="hover:text-foreground">{d.blog.title}</Link>
         <span className="mx-2">/</span>
         <span className="text-foreground">{post.title}</span>
       </nav>
@@ -195,13 +204,13 @@ export default async function BlogPostPage({ params }: Props) {
       {related.length > 0 && (
         <section className="mt-12 border-t border-border pt-8" aria-labelledby="related-heading">
           <h2 id="related-heading" className="text-lg font-semibold">
-            Related posts
+            {d.blog.relatedPosts}
           </h2>
           <ul className="mt-4 grid gap-4 sm:grid-cols-3">
             {related.map((r) => (
               <li key={r.id}>
                 <Link
-                  href={`/blog/${r.slug}`}
+                  href={L(`/blog/${r.slug}`)}
                   className="group block rounded-xl border border-border p-4 transition-shadow hover:shadow-md"
                 >
                   <p className="text-sm font-semibold leading-snug group-hover:text-brand">
@@ -218,13 +227,13 @@ export default async function BlogPostPage({ params }: Props) {
       {shopCats.length > 0 && (
         <section className="mt-12 rounded-2xl border border-border bg-background p-6" aria-labelledby="shop-topic-heading">
           <h2 id="shop-topic-heading" className="text-sm font-semibold">
-            Shop this topic
+            {d.blog.shopTopic}
           </h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {shopCats.map((c) => (
               <Link
                 key={c.id}
-                href={`/shop?category=${c.slug}`}
+                href={L(`/shop?category=${c.slug}`)}
                 className="rounded-full border border-border px-4 py-1.5 text-sm font-medium transition-colors hover:border-brand hover:text-brand"
               >
                 {c.name}
@@ -236,9 +245,9 @@ export default async function BlogPostPage({ params }: Props) {
 
       <footer className="mt-8 rounded-2xl border border-border bg-background p-6">
         <p className="text-sm text-muted">
-          Looking for furniture?{" "}
-          <Link href="/shop" className="font-semibold text-brand hover:underline">
-            Browse the shop →
+          {d.blog.lookingFor}{" "}
+          <Link href={L("/shop")} className="font-semibold text-brand hover:underline">
+            {d.blog.browseShop}
           </Link>
         </p>
       </footer>

@@ -3,25 +3,21 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrderById } from "@/lib/orders";
 import { formatPKR, formatDate } from "@/lib/format";
+import { isLocale, localize, type Locale } from "@/lib/i18n";
+import { t } from "@/lib/i18n/ui";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ lang: string; id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   return { title: `Order ${id}`, robots: { index: false } };
 }
 
-const statusLabel: Record<string, string> = {
-  pending: "Order received",
-  confirmed: "Confirmed",
-  processing: "Processing",
-  shipped: "Shipped",
-  delivered: "Delivered",
-  cancelled: "Cancelled",
-};
-
 export default async function OrderPage({ params }: Props) {
-  const { id } = await params;
+  const { id, lang: raw } = await params;
+  const lang: Locale = raw && isLocale(raw) ? raw : "en";
+  const d = t(lang);
+  const L = (path: string) => localize(path, lang);
   const data = await getOrderById(id);
   if (!data) notFound();
 
@@ -35,22 +31,18 @@ export default async function OrderPage({ params }: Props) {
           ✓
         </div>
         <h1 className="mt-4 text-2xl font-bold tracking-tight">
-          Thank you! Your order is confirmed.
+          {d.orders.thankYou}
         </h1>
         <p className="mt-2 text-sm text-muted">
-          Order <span className="font-semibold text-foreground">{order.id}</span> ·{" "}
+          {d.orders.orderLabel} <span className="font-semibold text-foreground">{order.id}</span> ·{" "}
           {formatDate(order.createdAt)}
         </p>
-        <p className="mt-4 text-sm text-muted">
-          We&apos;ll call you at{" "}
-          <span className="font-medium text-foreground">{order.customerPhone}</span>{" "}
-          shortly to confirm delivery details.
-        </p>
+        <p className="mt-4 text-sm text-muted">{d.orders.callNote(order.customerPhone)}</p>
       </div>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2">
         <div className="rounded-2xl border border-border p-6">
-          <h2 className="text-sm font-semibold">Shipping to</h2>
+          <h2 className="text-sm font-semibold">{d.orders.shippingTo}</h2>
           <div className="mt-2 text-sm text-muted">
             <p className="font-medium text-foreground">{order.customerName}</p>
             {addr && (
@@ -67,7 +59,7 @@ export default async function OrderPage({ params }: Props) {
         </div>
 
         <div className="rounded-2xl border border-border p-6">
-          <h2 className="text-sm font-semibold">Payment</h2>
+          <h2 className="text-sm font-semibold">{d.orders.payment}</h2>
           <div className="mt-2 text-sm text-muted">
             <p className="font-medium text-foreground">{order.paymentMethod}</p>
             <p className="mt-1 capitalize">{order.paymentStatus}</p>
@@ -77,9 +69,9 @@ export default async function OrderPage({ params }: Props) {
 
       <div className="mt-6 rounded-2xl border border-border p-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Items</h2>
+          <h2 className="text-sm font-semibold">{d.orders.items}</h2>
           <span className="inline-flex rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold text-brand">
-            {statusLabel[order.status] ?? order.status}
+            {d.orders.statuses[order.status] ?? order.status}
           </span>
         </div>
 
@@ -96,23 +88,23 @@ export default async function OrderPage({ params }: Props) {
         </ul>
 
         <div className="mt-2 flex justify-between border-t border-border pt-4 font-bold">
-          <span>Total</span>
+          <span>{d.cart.total}</span>
           <span>{formatPKR(order.totalAmount)}</span>
         </div>
       </div>
 
       <div className="mt-8 flex justify-center gap-4">
         <Link
-          href="/shop"
+          href={L("/shop")}
           className="rounded-lg bg-brand px-6 py-3 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
         >
-          Continue Shopping
+          {d.cart.continueShopping}
         </Link>
         <Link
-          href="/contact"
+          href={L("/contact")}
           className="rounded-lg border border-border px-6 py-3 text-sm font-semibold transition-colors hover:border-brand"
         >
-          Need help?
+          {d.orders.needHelp}
         </Link>
       </div>
     </div>

@@ -1,14 +1,38 @@
+import { site } from "./site";
+
+const formatterCache = new Map<string, Intl.NumberFormat>();
+
+/** Resolve the display currency: env value if it's a valid code, else PKR. */
+function resolveCurrency(): string {
+  const c = site.currency;
+  return /^[A-Za-z]{3}$/.test(c) ? c.toUpperCase() : "PKR";
+}
+
+function getFormatter(currency: string): Intl.NumberFormat {
+  let f = formatterCache.get(currency);
+  if (!f) {
+    f = new Intl.NumberFormat("en-PK", {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+    formatterCache.set(currency, f);
+  }
+  return f;
+}
+
 /**
- * Format a number as PKR currency.
+ * Format a number as store currency (PKR by default).
+ * Integers stay clean ("Rs 25,000"); fractional amounts keep paisa
+ * ("Rs 24,999.50") instead of silently rounding.
  * e.g. formatPKR(25000) => "Rs 25,000"
  */
 export function formatPKR(amount: number): string {
-  return new Intl.NumberFormat("en-PK", {
-    style: "currency",
-    currency: "PKR",
-    currencyDisplay: "narrowSymbol",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  const out = getFormatter(resolveCurrency()).format(amount);
+  // Pad a lone decimal digit to paisa: "Rs 24,999.5" -> "Rs 24,999.50"
+  return /\.\d$/.test(out) ? out + "0" : out;
 }
 
 /**

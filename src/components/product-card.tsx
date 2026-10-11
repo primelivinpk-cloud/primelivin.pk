@@ -1,8 +1,16 @@
 import Link from "next/link";
 import type { Product } from "@/lib/schema";
 import { formatPKR } from "@/lib/format";
+import { localize, type Locale } from "@/lib/i18n";
+import { t } from "@/lib/i18n/ui";
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({
+  product,
+  lang = "en",
+}: {
+  product: Product;
+  lang?: Locale;
+}) {
   const discount =
     product.compareAtPrice && product.compareAtPrice > product.price
       ? Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)
@@ -10,7 +18,7 @@ export function ProductCard({ product }: { product: Product }) {
 
   return (
     <Link
-      href={`/shop/${product.slug}`}
+      href={localize(`/shop/${product.slug}`, lang)}
       className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-background transition-shadow hover:shadow-lg"
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-brand/10">
@@ -33,7 +41,7 @@ export function ProductCard({ product }: { product: Product }) {
         )}
         {product.isFeatured && (
           <span className="absolute right-3 top-3 rounded-full bg-brand px-2.5 py-1 text-xs font-semibold text-brand-fg">
-            Featured
+            {t(lang).common.featured}
           </span>
         )}
       </div>

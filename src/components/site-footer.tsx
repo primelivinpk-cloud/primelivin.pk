@@ -1,10 +1,31 @@
 import Link from "next/link";
 import { site } from "@/lib/site";
+import { localize, type Locale } from "@/lib/i18n";
+import { t } from "@/lib/i18n/ui";
 
 // Computed once at module load so it's stable during prerendering.
 const currentYear = new Date().getFullYear();
 
-export function SiteFooter() {
+export function SiteFooter({ lang }: { lang: Locale }) {
+  const d = t(lang);
+  const L = (path: string) => localize(path, lang);
+
+  const shopLinks = [
+    { href: "/shop", label: d.footer.allFurniture },
+    { href: "/shop?category=office-chairs", label: d.footer.officeChairs },
+    { href: "/shop?category=sofas", label: d.footer.sofas },
+    { href: "/shop?category=beds", label: d.footer.beds },
+    { href: "/shop?category=dining-sets", label: d.footer.diningSets },
+  ];
+
+  const companyLinks = [
+    { href: "/about", label: d.footer.aboutUs },
+    { href: "/blog", label: d.footer.blog },
+    { href: "/contact", label: d.footer.contact },
+    { href: "/faq", label: d.footer.faq },
+    { href: "/shipping", label: d.footer.shipping },
+  ];
+
   return (
     <footer className="border-t border-border bg-background">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -22,28 +43,33 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold">Shop</h3>
+            <h3 className="text-sm font-semibold">{d.footer.shop}</h3>
             <ul className="mt-4 space-y-2 text-sm text-muted">
-              <li><Link className="hover:text-foreground" href="/shop">All Furniture</Link></li>
-              <li><Link className="hover:text-foreground" href="/shop?category=office-chairs">Office Chairs</Link></li>
-              <li><Link className="hover:text-foreground" href="/shop?category=sofas">Sofas</Link></li>
-              <li><Link className="hover:text-foreground" href="/shop?category=beds">Beds</Link></li>
-              <li><Link className="hover:text-foreground" href="/shop?category=dining-sets">Dining Sets</Link></li>
+              {shopLinks.map((l) => (
+                <li key={l.href}>
+                  <Link className="hover:text-foreground" href={L(l.href)}>
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold">Company</h3>
+            <h3 className="text-sm font-semibold">{d.footer.company}</h3>
             <ul className="mt-4 space-y-2 text-sm text-muted">
-              <li><Link className="hover:text-foreground" href="/about">About Us</Link></li>
-              <li><Link className="hover:text-foreground" href="/blog">Blog</Link></li>
-              <li><Link className="hover:text-foreground" href="/contact">Contact</Link></li>
-              <li><Link className="hover:text-foreground" href="/shipping">Shipping & Returns</Link></li>
+              {companyLinks.map((l) => (
+                <li key={l.href}>
+                  <Link className="hover:text-foreground" href={L(l.href)}>
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold">We Deliver Across Pakistan</h3>
+            <h3 className="text-sm font-semibold">{d.footer.deliverTitle}</h3>
             <ul className="mt-4 space-y-2 text-sm text-muted">
               {site.regions.map((r) => (
                 <li key={r}>{r}</li>
@@ -54,10 +80,10 @@ export function SiteFooter() {
 
         <div className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-border pt-8 sm:flex-row">
           <p className="text-sm text-muted">
-            © {currentYear} {site.name}. All rights reserved.
+            © {currentYear} {site.name}. {d.footer.rights}
           </p>
           <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
-            <span className="font-medium">We accept:</span>
+            <span className="font-medium">{d.footer.weAccept}</span>
             {site.paymentMethods.map((m) => (
               <span key={m} className="rounded-full border border-border px-2.5 py-1">
                 {m}

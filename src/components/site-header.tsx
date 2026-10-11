@@ -4,24 +4,58 @@ import Link from "next/link";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/components/cart/cart-provider";
+import { localize, type Locale } from "@/lib/i18n";
+import { t } from "@/lib/i18n/ui";
 
-const nav = [
-  { href: "/", label: "Home" },
-  { href: "/shop", label: "Shop" },
-  { href: "/blog", label: "Blog" },
-  { href: "/about", label: "About" },
-];
+function LanguageSwitcher({ lang }: { lang: Locale }) {
+  const pathname = usePathname();
+  const base = pathname.replace(/^\/(en|ur)(?=\/|$)/, "") || "/";
+  const isUr = lang === "ur";
+  const urduHref = base === "/" ? "/ur" : `/ur${base}`;
+  const englishHref = base;
 
-export function SiteHeader() {
+  return (
+    <div className="flex items-center gap-1.5 rounded-lg border border-border px-2 py-1 text-xs font-semibold">
+      <Link
+        href={englishHref}
+        hrefLang="en-PK"
+        className={!isUr ? "text-brand" : "text-muted hover:text-foreground"}
+      >
+        {t(lang).switcher.en}
+      </Link>
+      <span aria-hidden className="text-muted/50">
+        |
+      </span>
+      <Link
+        href={urduHref}
+        hrefLang="ur-PK"
+        lang="ur"
+        className={isUr ? "text-brand" : "text-muted hover:text-foreground"}
+      >
+        {t(lang).switcher.ur}
+      </Link>
+    </div>
+  );
+}
+
+export function SiteHeader({ lang }: { lang: Locale }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const { cart } = useCart();
   const count = cart.itemCount;
+  const d = t(lang);
+
+  const nav = [
+    { href: "/", label: d.nav.home },
+    { href: "/shop", label: d.nav.shop },
+    { href: "/blog", label: d.nav.blog },
+    { href: "/about", label: d.nav.about },
+  ];
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
+        <Link href={localize("/", lang)} className="flex items-center gap-2" onClick={() => setOpen(false)}>
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand font-bold text-brand-fg">
             PL
           </span>
@@ -32,12 +66,13 @@ export function SiteHeader() {
 
         <nav className="hidden items-center gap-1 md:flex">
           {nav.map((item) => {
+            const href = localize(item.href, lang);
             const active =
-              item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              item.href === "/" ? pathname === "/" || pathname === "/ur" : pathname.startsWith(href);
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={href}
                 className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                   active
                     ? "text-brand"
@@ -51,23 +86,24 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
+          <LanguageSwitcher lang={lang} />
           <Link
-            href="/admin"
+            href={localize("/admin", lang)}
             className="text-sm font-medium text-muted transition-colors hover:text-foreground"
           >
-            Admin
+            {d.nav.admin}
           </Link>
           <Link
-            href="/dashboard"
+            href={localize("/dashboard", lang)}
             className="text-sm font-medium text-muted transition-colors hover:text-foreground"
           >
-            Account
+            {d.nav.account}
           </Link>
           <Link
-            href="/cart"
+            href={localize("/cart", lang)}
             className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
           >
-            Cart
+            {d.nav.cart}
             <span className="rounded-full bg-brand-fg/20 px-2 py-0.5 text-xs">{count}</span>
           </Link>
         </div>
@@ -77,9 +113,9 @@ export function SiteHeader() {
           className="inline-flex h-10 w-10 items-center justify-center rounded-md md:hidden"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          aria-label="Toggle menu"
+          aria-label={d.nav.menu}
         >
-          <span className="sr-only">Menu</span>
+          <span className="sr-only">{d.nav.menu}</span>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             {open ? (
               <path d="M6 18L18 6M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
@@ -93,10 +129,13 @@ export function SiteHeader() {
       {open && (
         <div className="border-t border-border md:hidden">
           <div className="space-y-1 px-4 py-3">
+            <div className="pb-2">
+              <LanguageSwitcher lang={lang} />
+            </div>
             {nav.map((item) => (
               <Link
                 key={item.href}
-                href={item.href}
+                href={localize(item.href, lang)}
                 onClick={() => setOpen(false)}
                 className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-brand/10"
               >
@@ -104,25 +143,25 @@ export function SiteHeader() {
               </Link>
             ))}
             <Link
-              href="/admin"
+              href={localize("/admin", lang)}
               onClick={() => setOpen(false)}
               className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-brand/10"
             >
-              Admin
+              {d.nav.admin}
             </Link>
             <Link
-              href="/dashboard"
+              href={localize("/dashboard", lang)}
               onClick={() => setOpen(false)}
               className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-brand/10"
             >
-              Account
+              {d.nav.account}
             </Link>
             <Link
-              href="/cart"
+              href={localize("/cart", lang)}
               onClick={() => setOpen(false)}
               className="block rounded-md bg-brand px-3 py-2 text-center text-base font-semibold text-brand-fg"
             >
-              Cart ({count})
+              {d.nav.cart} ({count})
             </Link>
           </div>
         </div>

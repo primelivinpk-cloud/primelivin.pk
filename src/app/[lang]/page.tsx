@@ -1,9 +1,39 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getProducts, getCategories, getPublishedPosts, getStoreStats } from "@/lib/queries";
 import { ProductCard } from "@/components/product-card";
 import { site } from "@/lib/site";
+import { canonicalFor, isLocale, languagesFor, localize, type Locale } from "@/lib/i18n";
+import { t } from "@/lib/i18n/ui";
 
-export default async function HomePage() {
+async function langOf(params: Promise<{ lang?: string }>): Promise<Locale> {
+  const { lang } = await params;
+  return lang && isLocale(lang) ? lang : "en";
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}): Promise<Metadata> {
+  const lang = await langOf(params);
+  return {
+    alternates: {
+      canonical: canonicalFor("/", lang),
+      languages: languagesFor("/"),
+    },
+  };
+}
+
+export default async function HomePage({
+  params,
+}: {
+  params: Promise<{ lang: string }>;
+}) {
+  const lang = await langOf(params);
+  const d = t(lang);
+  const L = (path: string) => localize(path, lang);
+
   const [featured, categories, posts, stats] = await Promise.all([
     getProducts({ featured: true, limit: 8 }),
     getCategories(),
@@ -18,27 +48,26 @@ export default async function HomePage() {
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
           <div className="max-w-3xl">
             <p className="text-sm font-semibold uppercase tracking-wider opacity-80">
-              Delivered across Pakistan
+              {d.home.heroKicker}
             </p>
             <h1 className="mt-4 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Furniture your home deserves.
+              {d.home.heroTitle}
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed opacity-90">
-              Office chairs, sofas, beds and dining sets — quality pieces at
-              honest PKR prices. Cash on Delivery, EasyPaisa &amp; JazzCash accepted.
+              {d.home.heroText}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/shop"
+                href={L("/shop")}
                 className="inline-flex items-center rounded-lg bg-brand-fg px-6 py-3 text-sm font-semibold text-brand transition-opacity hover:opacity-90"
               >
-                Shop All Furniture
+                {d.home.shopAll}
               </Link>
               <Link
-                href="/blog"
+                href={L("/blog")}
                 className="inline-flex items-center rounded-lg border border-brand-fg/40 px-6 py-3 text-sm font-semibold transition-colors hover:bg-brand-fg/10"
               >
-                Buying Guides
+                {d.home.buyingGuides}
               </Link>
             </div>
           </div>
@@ -48,12 +77,7 @@ export default async function HomePage() {
       {/* Trust strip */}
       <section className="border-b border-border bg-background">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-4 py-8 sm:px-6 lg:grid-cols-4 lg:px-8">
-          {[
-            { title: "Free Delivery", note: "Major cities" },
-            { title: "Cash on Delivery", note: "Pay on arrival" },
-            { title: "Easy & JazzCash", note: "Mobile wallets" },
-            { title: "Warranty", note: "On every piece" },
-          ].map((f) => (
+          {d.home.trust.map((f) => (
             <div key={f.title} className="rounded-xl border border-border p-4">
               <p className="text-sm font-semibold">{f.title}</p>
               <p className="mt-1 text-xs text-muted">{f.note}</p>
@@ -67,30 +91,30 @@ export default async function HomePage() {
         <div className="flex items-end justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              Featured Furniture
+              {d.home.featuredTitle}
             </h2>
             <p className="mt-2 text-muted">
-              Hand-picked pieces, ready to ship across Pakistan.
+              {d.home.featuredText}
             </p>
           </div>
-          <Link href="/shop" className="hidden text-sm font-semibold text-brand hover:underline sm:block">
-            View all →
+          <Link href={L("/shop")} className="hidden text-sm font-semibold text-brand hover:underline sm:block">
+            {d.common.viewAll} →
           </Link>
         </div>
 
         {featured.length === 0 ? (
-          <p className="mt-10 text-muted">No products yet. Check back soon.</p>
+          <p className="mt-10 text-muted">{d.home.noProducts}</p>
         ) : (
           <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {featured.map((p) => (
-              <ProductCard key={p.id} product={p} />
+              <ProductCard key={p.id} product={p} lang={lang} />
             ))}
           </div>
         )}
 
         <div className="mt-8 text-center sm:hidden">
-          <Link href="/shop" className="text-sm font-semibold text-brand hover:underline">
-            View all products →
+          <Link href={L("/shop")} className="text-sm font-semibold text-brand hover:underline">
+            {d.common.viewAllProducts} →
           </Link>
         </div>
       </section>
@@ -99,13 +123,13 @@ export default async function HomePage() {
       <section className="border-y border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Shop by Category
+            {d.home.categoriesTitle}
           </h2>
           <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
             {categories.map((c) => (
               <Link
                 key={c.id}
-                href={`/shop?category=${c.slug}`}
+                href={L(`/shop?category=${c.slug}`)}
                 className="group rounded-2xl border border-border p-6 transition-colors hover:border-brand"
               >
                 <span className="text-sm font-semibold group-hover:text-brand">
@@ -124,25 +148,25 @@ export default async function HomePage() {
           <div className="flex items-end justify-between">
             <div>
               <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                From the Blog
+                {d.home.blogTitle}
               </h2>
               <p className="mt-2 text-muted">
-                Guides to help you buy better furniture in Pakistan.
+                {d.home.blogText}
               </p>
             </div>
-            <Link href="/blog" className="hidden text-sm font-semibold text-brand hover:underline sm:block">
-              All posts →
+            <Link href={L("/blog")} className="hidden text-sm font-semibold text-brand hover:underline sm:block">
+              {d.home.allPosts} →
             </Link>
           </div>
           <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((post) => (
               <Link
                 key={post.id}
-                href={`/blog/${post.slug}`}
+                href={L(`/blog/${post.slug}`)}
                 className="group rounded-2xl border border-border p-6 transition-shadow hover:shadow-md"
               >
                 <p className="text-xs font-semibold uppercase tracking-wider text-accent">
-                  {post.category ?? "Article"}
+                  {post.category ?? d.common.article}
                 </p>
                 <h3 className="mt-2 text-lg font-semibold leading-snug group-hover:text-brand">
                   {post.title}
@@ -160,9 +184,7 @@ export default async function HomePage() {
       <section className="border-t border-border bg-background">
         <div className="mx-auto max-w-7xl px-4 py-12 text-center sm:px-6 lg:px-8">
           <p className="text-sm text-muted">
-            <span className="font-semibold text-foreground">{stats.products}</span> products ·{" "}
-            <span className="font-semibold text-foreground">{stats.categories}</span> categories · Serving all of{" "}
-            {site.regions.join(", ")}.
+            {d.home.stats(stats.products, stats.categories, site.regions.join(", "))}
           </p>
         </div>
       </section>

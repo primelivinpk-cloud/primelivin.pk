@@ -6,9 +6,12 @@ import {
   blogPosts,
   orders,
   orderItems,
+  addresses,
+  users,
   type Product,
   type BlogPost,
   type Category,
+  type UserPreferences,
 } from "./schema";
 import { eq, and, desc, asc, sql, gte, lte, or, like } from "drizzle-orm";
 
@@ -320,4 +323,41 @@ export const getUserOrderStats = cache(async (userId: string) => {
     totalOrders: rows[0]?.count ?? 0,
     totalSpent: rows[0]?.spent ?? 0,
   };
+});
+
+// ---------- User settings ----------
+
+export const DEFAULT_PREFERENCES: UserPreferences = {
+  orderEmails: true,
+  promoEmails: false,
+  whatsappUpdates: true,
+};
+
+/** Saved addresses for the address book (default first). */
+export const getUserAddresses = cache(async (userId: string) => {
+  return db
+    .select()
+    .from(addresses)
+    .where(eq(addresses.userId, userId))
+    .orderBy(desc(addresses.isDefault), desc(addresses.createdAt));
+});
+
+/** The default address — used to prefill checkout. */
+export const getDefaultAddress = cache(async (userId: string) => {
+  const rows = await db
+    .select()
+    .from(addresses)
+    .where(and(eq(addresses.userId, userId), eq(addresses.isDefault, true)))
+    .limit(1);
+  return rows[0] ?? null;
+});
+
+/** Notification preferences with defaults merged in. */
+export const getUserPreferences = cache(async (userId: string) => {
+  const rows = await db
+    .select({ preferences: users.preferences })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  return { ...DEFAULT_PREFERENCES, ...(rows[0]?.preferences ?? {}) };
 });

@@ -6,6 +6,7 @@ import { formatDate } from "@/lib/format";
 import { isLocale, localize, type Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n/ui";
 import { PasswordForm, ProfileForm } from "@/components/auth/account-forms";
+import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 
 export async function generateMetadata({
   params,
@@ -40,6 +41,10 @@ export default async function ProfilePage({
         <span className="mx-2">/</span>
         <span className="text-foreground">{d.profileTitle}</span>
       </nav>
+
+      <div className="mt-4">
+        <DashboardNav lang={lang} />
+      </div>
 
       <div className="mt-6 border-b border-border pb-6">
         <h1 className="text-3xl font-bold tracking-tight">{d.profileTitle}</h1>

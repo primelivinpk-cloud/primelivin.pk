@@ -138,6 +138,12 @@ export const cartItems = sqliteTable("cart_items", {
 });
 
 // ---------- Users (customer accounts) ----------
+export type UserPreferences = {
+  orderEmails: boolean;
+  promoEmails: boolean;
+  whatsappUpdates: boolean;
+};
+
 export const users = sqliteTable("users", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
@@ -145,6 +151,23 @@ export const users = sqliteTable("users", {
   phone: text("phone"),
   passwordHash: text("password_hash").notNull(),
   role: text("role", { enum: ["customer", "admin"] }).notNull().default("customer"),
+  preferences: text("preferences", { mode: "json" }).$type<UserPreferences>(),
+  ...timestamps,
+});
+
+// ---------- Saved addresses (address book) ----------
+export const addresses = sqliteTable("addresses", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  label: text("label").notNull().default("Home"),
+  line1: text("line1").notNull(),
+  line2: text("line2"),
+  city: text("city").notNull(),
+  region: text("region").notNull(),
+  postalCode: text("postal_code"),
+  isDefault: integer("is_default", { mode: "boolean" }).notNull().default(false),
   ...timestamps,
 });
 
@@ -167,6 +190,8 @@ export type NewBlogPost = typeof blogPosts.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
+export type Address = typeof addresses.$inferSelect;
+export type NewAddress = typeof addresses.$inferInsert;
 export type Order = typeof orders.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
 export type OrderItem = typeof orderItems.$inferSelect;

@@ -7,6 +7,7 @@ import { formatPKR, formatDate } from "@/lib/format";
 import { isLocale, localize, type Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n/ui";
 import { StatusBadge } from "@/components/dashboard/order-status";
+import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 
 export async function generateMetadata({
   params,
@@ -42,6 +43,10 @@ export default async function DashboardOrdersPage({
         <span className="mx-2">/</span>
         <span className="text-foreground">{d.myOrders}</span>
       </nav>
+
+      <div className="mt-4">
+        <DashboardNav lang={lang} />
+      </div>
 
       <div className="mt-6 flex items-end justify-between border-b border-border pb-6">
         <h1 className="text-3xl font-bold tracking-tight">{d.myOrders}</h1>

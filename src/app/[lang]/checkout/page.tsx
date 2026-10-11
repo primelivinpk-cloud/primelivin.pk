@@ -8,6 +8,7 @@ import { formatPKR } from "@/lib/format";
 import { isLocale, localize, type Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n/ui";
 import { getSessionUser } from "@/lib/auth";
+import { getDefaultAddress } from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -25,6 +26,7 @@ export default async function CheckoutPage({
   const d = t(lang);
   const cartHref = localize("/cart", lang);
   const user = await getSessionUser();
+  const defaultAddress = user ? await getDefaultAddress(user.id) : null;
 
   const store = await cookies();
   const token = store.get("cart_token")?.value;
@@ -49,7 +51,20 @@ export default async function CheckoutPage({
             lang={lang}
             prefill={
               user
-                ? { name: user.name, email: user.email, phone: user.phone }
+                ? {
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone,
+                    address: defaultAddress
+                      ? {
+                          line1: defaultAddress.line1,
+                          line2: defaultAddress.line2,
+                          city: defaultAddress.city,
+                          region: defaultAddress.region,
+                          postalCode: defaultAddress.postalCode,
+                        }
+                      : undefined,
+                  }
                 : undefined
             }
           />

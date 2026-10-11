@@ -118,6 +118,20 @@ const migrations = [
     updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
   );`,
 
+  `CREATE TABLE IF NOT EXISTS addresses (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    label TEXT NOT NULL DEFAULT 'Home',
+    line1 TEXT NOT NULL,
+    line2 TEXT,
+    city TEXT NOT NULL,
+    region TEXT NOT NULL,
+    postal_code TEXT,
+    is_default INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000),
+    updated_at INTEGER NOT NULL DEFAULT (unixepoch() * 1000)
+  );`,
+
   // Indexes for common lookups
   `CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_slug);`,
   `CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active);`,
@@ -129,12 +143,21 @@ const migrations = [
   `CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);`,
   `CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_cart_items_token_product ON cart_items(cart_token, product_id);`,
+  `CREATE INDEX IF NOT EXISTS idx_addresses_user ON addresses(user_id);`,
 ];
 
 async function migrate() {
   console.log("🚀 Running migrations against Turso…");
   for (const sql of migrations) {
     await client.execute(sql);
+  }
+
+  // Additive column changes (SQLite ALTER TABLE is not idempotent — skip if present)
+  try {
+    await client.execute(`ALTER TABLE users ADD COLUMN preferences TEXT`);
+    console.log("✓ Added users.preferences");
+  } catch {
+    // column already exists
   }
   console.log("✅ All tables created / up to date.");
   client.close();

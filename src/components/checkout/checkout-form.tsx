@@ -24,7 +24,20 @@ function Legend({ children }: { children: React.ReactNode }) {
   );
 }
 
-type Prefill = { name: string; email: string; phone: string | null };
+type PrefillAddress = {
+  line1: string;
+  line2: string | null;
+  city: string;
+  region: string;
+  postalCode: string | null;
+};
+
+type Prefill = {
+  name: string;
+  email: string;
+  phone: string | null;
+  address?: PrefillAddress;
+};
 
 export function CheckoutForm({
   lang,
@@ -38,7 +51,7 @@ export function CheckoutForm({
     initialState
   );
   const errors = state.errors ?? {};
-  const [region, setRegion] = useState<string>("");
+  const [region, setRegion] = useState<string>(prefill?.address?.region ?? "");
   const deliveryEstimate = region ? site.deliveryEstimates[region] : undefined;
   const d = t(lang);
 
@@ -111,6 +124,7 @@ export function CheckoutForm({
           <input
             id="addressLine1"
             name="addressLine1"
+            defaultValue={prefill?.address?.line1 ?? ""}
             className={inputClass}
             placeholder="House 12, Street 4, G-11/3"
             autoComplete="address-line1"
@@ -125,6 +139,7 @@ export function CheckoutForm({
           <input
             id="addressLine2"
             name="addressLine2"
+            defaultValue={prefill?.address?.line2 ?? ""}
             className={inputClass}
             placeholder="Near Super Market, opposite the mosque"
             autoComplete="address-line2"
@@ -139,6 +154,7 @@ export function CheckoutForm({
             <input
               id="city"
               name="city"
+              defaultValue={prefill?.address?.city ?? ""}
               className={inputClass}
               placeholder="Islamabad"
               autoComplete="address-level2"
@@ -182,6 +198,7 @@ export function CheckoutForm({
             <input
               id="postalCode"
               name="postalCode"
+              defaultValue={prefill?.address?.postalCode ?? ""}
               className={inputClass}
               placeholder="44000"
               inputMode="numeric"

@@ -1,7 +1,20 @@
 import { put, del, list } from "@vercel/blob";
-import { env } from "./env";
 
-const token = env.BLOB_READ_WRITE_TOKEN ?? process.env.BLOB_READ_WRITE_TOKEN;
+/**
+ * Resolve Blob auth.
+ * - On Vercel: use `storeId` + automatic OIDC auth (no token needed).
+ * - Locally / outside Vercel: fall back to the read-write token.
+ */
+function blobAuth(): { storeId?: string; token?: string } {
+  const storeId = process.env.BLOB_STORE_ID ?? process.env.BLOB_PK_STORE_ID;
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+
+  // Vercel injects VERCEL_OIDC_TOKEN; prefer storeId there.
+  if (process.env.VERCEL && storeId) return { storeId };
+  if (token) return { token };
+  if (storeId) return { storeId };
+  return {};
+}
 
 /**
  * Upload a file to Vercel Blob and return its public URL.
@@ -12,8 +25,8 @@ export async function uploadImage(
 ): Promise<string> {
   const blob = await put(filename, file, {
     access: "public",
-    token,
     allowOverwrite: true,
+    ...blobAuth(),
   });
   return blob.url;
 }
@@ -22,7 +35,7 @@ export async function uploadImage(
  * Delete a blob by URL. Returns true if deleted.
  */
 export async function deleteImage(url: string): Promise<boolean> {
-  await del(url, { token });
+  await del(url, blobAuth());
   return true;
 }
 
@@ -30,7 +43,7 @@ export async function deleteImage(url: string): Promise<boolean> {
  * List all blobs under an optional prefix.
  */
 export async function listImages(prefix?: string) {
-  const { blobs } = await list({ prefix, token });
+  const { blobs } = await list({ prefix, ...blobAuth() });
   return blobs;
 }
 

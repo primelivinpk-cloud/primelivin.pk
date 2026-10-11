@@ -6,8 +6,9 @@ const envSchema = z.object({
   TURSO_AUTH_TOKEN: z.string().min(1),
 
   // Vercel Blob
-  BLOB_READ_WRITE_TOKEN: z.string().min(1),
+  BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
   BLOB_STORE_ID: z.string().optional(),
+  BLOB_PK_STORE_ID: z.string().optional(),
 
   // Site
   NEXT_PUBLIC_SITE_URL: z.string().url(),

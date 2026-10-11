@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { getProducts, getCategories } from "@/lib/queries";
+import Link from "next/link";
+import { getProducts, getCategories, countProducts, type ProductSort } from "@/lib/queries";
 import { ProductCard } from "@/components/product-card";
 
 export const metadata: Metadata = {
@@ -8,18 +9,56 @@ export const metadata: Metadata = {
     "Browse our full range of office chairs, sofas, beds, dining sets and desks. Delivered across Pakistan with Cash on Delivery.",
 };
 
+const SORT_OPTIONS: { value: ProductSort; label: string }[] = [
+  { value: "newest", label: "Newest" },
+  { value: "price-asc", label: "Price: Low to High" },
+  { value: "price-desc", label: "Price: High to Low" },
+  { value: "title", label: "Name: A–Z" },
+];
+
+const PAGE_SIZE = 12;
+
+type Search = {
+  category?: string;
+  q?: string;
+  sort?: string;
+  minPrice?: string;
+  maxPrice?: string;
+  page?: string;
+};
+
 export default async function ShopPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<Search>;
 }) {
-  const { category } = await searchParams;
-  const [products, categories] = await Promise.all([
-    getProducts({ category }),
+  const sp = await searchParams;
+  const category = sp.category || undefined;
+  const search = sp.q?.trim() || undefined;
+  const sortParam = (sp.sort as ProductSort) || "newest";
+  const sort = SORT_OPTIONS.some((s) => s.value === sortParam) ? sortParam : "newest";
+  const minPrice = sp.minPrice ? Number(sp.minPrice) : undefined;
+  const maxPrice = sp.maxPrice ? Number(sp.maxPrice) : undefined;
+  const page = Math.max(1, Number(sp.page) || 1);
+
+  const query = {
+    category,
+    search,
+    sort,
+    minPrice: Number.isFinite(minPrice) ? minPrice : undefined,
+    maxPrice: Number.isFinite(maxPrice) ? maxPrice : undefined,
+    limit: PAGE_SIZE,
+    offset: (page - 1) * PAGE_SIZE,
+  };
+
+  const [products, categories, total] = await Promise.all([
+    getProducts(query),
     getCategories(),
+    countProducts({ category, search, minPrice: query.minPrice, maxPrice: query.maxPrice }),
   ]);
 
   const activeCategory = categories.find((c) => c.slug === category);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -33,50 +72,124 @@ export default async function ShopPage({
         </p>
       </div>
 
-      {/* Category filter */}
-      <div className="mt-6 flex flex-wrap gap-2">
-        <FilterChip href="/shop" active={!category} label="All" />
-        {categories.map((c) => (
-          <FilterChip
-            key={c.id}
-            href={`/shop?category=${c.slug}`}
-            active={category === c.slug}
-            label={c.name}
+      {/* Filters */}
+      <form method="get" className="mt-6 space-y-4">
+        <div className="flex flex-wrap gap-2">
+          <FilterChip href={buildHref({ ...sp, category: undefined, page: undefined })} active={!category} label="All" />
+          {categories.map((c) => (
+            <FilterChip
+              key={c.id}
+              href={buildHref({ ...sp, category: c.slug, page: undefined })}
+              active={category === c.slug}
+              label={c.name}
+            />
+          ))}
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <input
+            type="search"
+            name="q"
+            defaultValue={sp.q ?? ""}
+            placeholder="Search products…"
+            className="rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-brand lg:col-span-2"
           />
-        ))}
-      </div>
+          <select
+            name="sort"
+            defaultValue={sort}
+            className="rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-brand"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            name="minPrice"
+            defaultValue={sp.minPrice ?? ""}
+            min={0}
+            placeholder="Min price"
+            className="rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-brand"
+          />
+          <input
+            type="number"
+            name="maxPrice"
+            defaultValue={sp.maxPrice ?? ""}
+            min={0}
+            placeholder="Max price"
+            className="rounded-lg border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-brand"
+          />
+        </div>
+
+        {/* Preserve category when submitting search */}
+        {category && <input type="hidden" name="category" value={category} />}
+
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            className="rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90"
+          >
+            Apply filters
+          </button>
+          <Link
+            href="/shop"
+            className="rounded-lg border border-border px-5 py-2.5 text-sm font-medium transition-colors hover:border-brand"
+          >
+            Reset
+          </Link>
+        </div>
+      </form>
+
+      <p className="mt-6 text-sm text-muted">
+        {total} {total === 1 ? "product" : "products"} found
+      </p>
 
       {products.length === 0 ? (
-        <div className="mt-16 rounded-2xl border border-border p-12 text-center">
+        <div className="mt-6 rounded-2xl border border-border p-12 text-center">
           <p className="text-lg font-medium">No products found</p>
-          <p className="mt-2 text-muted">
-            {activeCategory
-              ? "This category is empty right now."
-              : "Check back soon — new stock arrives weekly."}
-          </p>
+          <p className="mt-2 text-muted">Try adjusting your filters or search term.</p>
         </div>
       ) : (
-        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {products.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>
       )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <nav className="mt-10 flex items-center justify-center gap-2" aria-label="Pagination">
+          {page > 1 && (
+            <Link
+              href={buildHref({ ...sp, page: String(page - 1) })}
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:border-brand"
+            >
+              ← Previous
+            </Link>
+          )}
+          <span className="px-3 text-sm text-muted">
+            Page {page} of {totalPages}
+          </span>
+          {page < totalPages && (
+            <Link
+              href={buildHref({ ...sp, page: String(page + 1) })}
+              className="rounded-lg border border-border px-4 py-2 text-sm font-medium transition-colors hover:border-brand"
+            >
+              Next →
+            </Link>
+          )}
+        </nav>
+      )}
     </div>
   );
 }
 
-function FilterChip({
-  href,
-  active,
-  label,
-}: {
-  href: string;
-  active: boolean;
-  label: string;
-}) {
+function FilterChip({ href, active, label }: { href: string; active: boolean; label: string }) {
   return (
-    <a
+    <Link
       href={href}
       className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
         active
@@ -85,6 +198,19 @@ function FilterChip({
       }`}
     >
       {label}
-    </a>
+    </Link>
   );
+}
+
+/** Build a /shop href preserving existing query params. */
+function buildHref(params: Record<string, string | undefined>) {
+  const qs = new URLSearchParams();
+  for (const [k, v] of Object.entries(params)) {
+    if (!v || k === "page" && v === "1") continue;
+    if (["category", "q", "sort", "minPrice", "maxPrice", "page"].includes(k)) {
+      qs.set(k, v);
+    }
+  }
+  const s = qs.toString();
+  return s ? `/shop?${s}` : "/shop";
 }

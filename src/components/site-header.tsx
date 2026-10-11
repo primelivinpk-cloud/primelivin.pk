@@ -49,6 +49,12 @@ export function SiteHeader() {
 
         <div className="hidden items-center gap-3 md:flex">
           <Link
+            href="/admin"
+            className="text-sm font-medium text-muted transition-colors hover:text-foreground"
+          >
+            Admin
+          </Link>
+          <Link
             href="/dashboard"
             className="text-sm font-medium text-muted transition-colors hover:text-foreground"
           >
@@ -94,6 +100,13 @@ export function SiteHeader() {
                 {item.label}
               </Link>
             ))}
+            <Link
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-3 py-2 text-base font-medium text-foreground hover:bg-brand/10"
+            >
+              Admin
+            </Link>
             <Link
               href="/dashboard"
               onClick={() => setOpen(false)}
